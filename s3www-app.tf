@@ -26,6 +26,10 @@ resource "helm_release" "s3www_app" {
     value = var.environment
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+  
   depends_on = [
     kubernetes_namespace_v1.s3www_namespace,
     kubernetes_manifest.minio_sealed_secret

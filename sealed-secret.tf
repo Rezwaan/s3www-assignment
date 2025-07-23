@@ -6,7 +6,26 @@ resource "helm_release" "sealed_secrets" {
   chart      = "sealed-secrets"
   version    = "2.10.0"
 
-  create_namespace = true
+  # Lifecycle management, Since its a managed chart, we need to make sure we have more control on deployment, CRDs and webhooks
+  wait                = true
+  timeout             = 300
+  create_namespace    = true
+  cleanup_on_fail     = true
+  replace             = var.force_update
+  disable_webhooks    = false
+  atomic              = true  # Ensures rollback on failure
+  skip_crds           = false # Ensure CRDs are managed
+
+  # Lifecycle hooks
+  provisioner "local-exec" {
+    when    = create
+    command = "echo 'Sealed Secrets Controller deployed successfully'"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "echo 'Cleaning up Sealed Secrets Controller'"
+  }
 }
 
 # Actual Sealed Secret
@@ -30,6 +49,10 @@ resource "kubernetes_manifest" "minio_sealed_secret" {
       type: Opaque
   EOF
     )
+  
+  lifecycle {
+    create_before_destroy = true
+  }
 
   depends_on = [kubernetes_namespace_v1.s3www_namespace]
 }

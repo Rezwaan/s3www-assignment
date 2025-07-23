@@ -12,4 +12,7 @@ resource "kubernetes_namespace_v1" "s3www_namespace" {
       "description" = "Namespace for s3www application and MinIO storage"
     }
   }
+  lifecycle {
+    create_before_destroy = true
+  }
 }
