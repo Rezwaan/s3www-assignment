@@ -1,0 +1,202 @@
+# Default values for s3www-app
+# This is a YAML-formatted file.
+
+# s3www application configuration
+s3www:
+  image:
+    repository: y4m4/s3www
+    pullPolicy: Always
+    tag: "latest"
+  
+  service:
+    type: LoadBalancer
+    port: 8080
+    targetPort: 8080
+    name: http
+  
+  ingress:
+    enabled: true
+    className: ""
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: s3www.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  # Environment variables for s3www
+  env:
+    - name: S3_ENDPOINT
+      value: "http://s3www-app-minio:9000"
+    - name: S3_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: s3www-app-minio
+          key: rootUser
+    - name: S3_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: s3www-app-minio
+          key: rootPassword
+    - name: S3_BUCKET
+      value: "content"
+    - name: S3_REGION
+      value: "us-east-1"
+    # s3www specific environment variables
+    - name: S3WWW_ENDPOINT
+      value: "http://s3www-app-minio:9000"
+    - name: S3WWW_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: s3www-app-minio
+          key: rootUser
+    - name: S3WWW_SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: s3www-app-minio
+          key: rootPassword
+    - name: S3WWW_BUCKET
+      value: "content"
+    - name: S3WWW_ADDRESS
+      value: "0.0.0.0:8080"
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Health checks (more lenient for bucket availability)
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 60
+    periodSeconds: 30
+    timeoutSeconds: 10
+    failureThreshold: 5
+  
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  # Prometheus monitoring configuration (basic annotations only)
+  monitoring:
+    enabled: true
+    path: /metrics
+    port: 8080
+
+# File fetcher job configuration
+fileFetcher:
+  image:
+    repository: minio/mc
+    tag: latest
+    pullPolicy: Always
+  
+  # File to download and upload to MinIO
+  fileUrl: "https://media.giphy.com/media/VdiQKDAguhDSi37gn1/giphy.gif"
+  fileName: "giphy.gif"
+  bucketName: "content"
+  
+  resources:
+    limits:
+      cpu: 200m
+      memory: 256Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# MinIO dependency configuration
+minio:
+  # Enable MinIO deployment
+  enabled: true
+  
+  # Single instance mode (not distributed)
+  mode: standalone
+  replicas: 1
+
+  # MinIO access credentials
+  existingSecret: s3www-app-minio
+
+  # Default buckets to create
+  defaultBuckets: "content"
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    ports:
+      api: 9000
+      console: 9001
+  
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+    accessModes:
+      - ReadWriteOnce
+  
+  # Resource configuration
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  
+  # Security context
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+    readOnlyRootFilesystem: false
+  
+  # Completely disable all monitoring CRDs
+  metrics:
+    serviceMonitor:
+      enabled: false
+  
+  # Disable Prometheus Operator resources
+  prometheusOperator:
+    enabled: false
+  
+  # Disable all monitoring resources that require CRDs
+  monitoring:
+    enabled: false
+  
+  # Make sure no ServiceMonitor or PrometheusRule is created
+  serviceMonitor:
+    enabled: false
+  
+  prometheusRule:
+    enabled: false
+
+# Global configuration
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# Pod disruption budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80

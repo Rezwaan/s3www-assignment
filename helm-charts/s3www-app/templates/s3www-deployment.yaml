@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "s3www-app.fullname" . }}-s3www
+  labels:
+    {{- include "s3www-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: s3www
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- include "s3www-app.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: s3www
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.s3www.monitoring.enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/path: {{ .Values.s3www.monitoring.path | quote }}
+        prometheus.io/port: {{ .Values.s3www.monitoring.port | quote }}
+        {{- end }}
+      labels:
+        {{- include "s3www-app.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: s3www
+    spec:
+      {{- with .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        fsGroup: 2000 # to make sure that container has limited permissions to specific GID
+      initContainers:
+        - name: wait-for-minio
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Waiting for MinIO to be ready..."
+              until nc -z {{ include "s3www-app.fullname" . }}-minio 9000; do
+                echo "MinIO not ready, waiting 5 seconds..."
+                sleep 5
+              done
+              echo "MinIO is ready!"
+        - name: run-file-fetcher-and-wait
+          image: alpine:3.18
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "s3www-app.fullname" . }}-minio
+                  key: rootUser
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "s3www-app.fullname" . }}-minio
+                  key: rootPassword
+          command: ['sh', '-c']
+          args:
+            - |
+              set -e
+              echo "📦 Installing required tools..."
+              apk add --no-cache wget curl
+              
+              echo "⬇️ Installing MinIO client..."
+              wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+              chmod +x /usr/local/bin/mc
+              
+              echo "⏳ Waiting for MinIO..."
+              until nc -z {{ include "s3www-app.fullname" . }}-minio 9000 2>/dev/null; do
+                echo "MinIO not ready, waiting..."
+                sleep 10
+              done
+              
+              echo "🔧 Configuring MinIO client..."
+              mc alias set minio http://{{ include "s3www-app.fullname" . }}-minio:9000 "$MINIO_ACCESS_KEY" "$MINIO_SECRET_KEY"
+              
+              echo "🧪 Testing connection..."
+              mc admin info minio
+              
+              echo "🪣 Creating bucket..."
+              mc mb minio/{{ .Values.fileFetcher.bucketName }} --ignore-existing
+              
+              echo "⬇️ Downloading GIF..."
+              wget -O /tmp/{{ .Values.fileFetcher.fileName }} {{ .Values.fileFetcher.fileUrl }}
+              
+              echo "⬆️ Uploading file..."
+              mc cp /tmp/{{ .Values.fileFetcher.fileName }} minio/{{ .Values.fileFetcher.bucketName }}/
+              
+              echo "🔓 Setting public access..."
+              mc anonymous set public minio/{{ .Values.fileFetcher.bucketName }}
+              
+              echo "📋 Listing contents..."
+              mc ls minio/{{ .Values.fileFetcher.bucketName }}
+              
+              echo "🎉 SUCCESS! File uploaded."
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          # securityContext:
+          #   allowPrivilegeEscalation: false
+          #   runAsNonRoot: true
+          #   runAsUser: 1000
+          #   capabilities:
+          #     drop:
+          #     - ALL
+      containers:
+        - name: s3www
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1000
+            capabilities:
+              drop:
+              - ALL
+          image: "{{ .Values.s3www.image.repository }}:{{ .Values.s3www.image.tag }}"
+          imagePullPolicy: {{ .Values.s3www.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.s3www.service.targetPort }}
+              protocol: TCP
+          env:
+            {{- toYaml .Values.s3www.env | nindent 12 }}
+          {{- with .Values.s3www.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.s3www.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.s3www.resources | nindent 12 }}
+          volumeMounts:
+            - name: minio-credentials
+              mountPath: /etc/minio-credentials
+              readOnly: true
+      volumes:
+        - name: minio-credentials
+          secret:
+            secretName: {{ include "s3www-app.fullname" . }}-minio
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

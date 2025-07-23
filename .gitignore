@@ -1,0 +1,30 @@
+# Terraform state
+*.tfstate
+*.tfstate.backup
+
+# Crash logs
+crash.log
+
+# Terraform variable files with sensitive data
+*.tfvars
+*.tfvars.json
+
+# Terraform plan files
+*.tfplan
+tfplan
+
+# Terraform provider lock file (optional to ignore)
+.terraform.lock.hcl
+
+# Local Terraform working directory
+.terraform/
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+*.bak
+
+# Temporary file used for Kubeseal
+.tmp/
