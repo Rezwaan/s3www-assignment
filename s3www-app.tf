@@ -11,7 +11,7 @@ module "s3www_app" {
   create_namespace = false
   force_update     = var.force_update
   recreate_pods    = var.recreate_pods
-  
+
   # Values file
   values_files = [
     file("${path.module}/helm-charts/s3www-app/values.yaml")

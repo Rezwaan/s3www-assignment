@@ -39,7 +39,7 @@ output "minio_service_name" {
 # Access information
 output "application_url" {
   description = "URL to access the s3www application"
-  value = "http://localhost:8080 (via port-forward)"
+  value       = "http://localhost:8080 (via port-forward)"
 }
 
 output "minio_console_url" {

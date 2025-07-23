@@ -8,11 +8,11 @@ module "sealed_secrets" {
   chart      = "sealed-secrets"
 
   # Lifecycle management
-  create_namespace    = true
-  replace             = var.force_update
-  disable_webhooks    = false
-  atomic              = true
-  skip_crds           = false
+  create_namespace = true
+  replace          = var.force_update
+  disable_webhooks = false
+  atomic           = true
+  skip_crds        = false
 
   # Provisioner commands
   provisioners = {
@@ -41,8 +41,8 @@ resource "kubernetes_manifest" "minio_sealed_secret" {
         namespace: s3www
       type: Opaque
   EOF
-    )
-  
+  )
+
   lifecycle {
     create_before_destroy = true
   }
