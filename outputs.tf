@@ -7,22 +7,22 @@ output "namespace" {
 # Helm release outputs
 output "helm_release_name" {
   description = "The name of the Helm release"
-  value       = helm_release.s3www_app.name
+  value       = module.s3www_app.release_name
 }
 
 output "helm_release_namespace" {
   description = "The namespace of the Helm release"
-  value       = helm_release.s3www_app.namespace
+  value       = module.s3www_app.release_namespace
 }
 
 output "helm_release_version" {
   description = "The version of the deployed Helm release"
-  value       = helm_release.s3www_app.version
+  value       = module.s3www_app.release_version
 }
 
 output "helm_release_status" {
   description = "The status of the Helm release"
-  value       = helm_release.s3www_app.status
+  value       = module.s3www_app.release_status
 }
 
 # Service information
@@ -81,10 +81,10 @@ output "kubectl_commands" {
 output "helm_commands" {
   description = "Useful Helm commands for managing the release"
   value = {
-    status    = "helm status ${helm_release.s3www_app.name} -n ${helm_release.s3www_app.namespace}"
-    history   = "helm history ${helm_release.s3www_app.name} -n ${helm_release.s3www_app.namespace}"
-    upgrade   = "helm upgrade ${helm_release.s3www_app.name} ./helm-charts/s3www-app -n ${helm_release.s3www_app.namespace}"
-    rollback  = "helm rollback ${helm_release.s3www_app.name} -n ${helm_release.s3www_app.namespace}"
-    uninstall = "helm uninstall ${helm_release.s3www_app.name} -n ${helm_release.s3www_app.namespace}"
+    status    = "helm status ${module.s3www_app.release_name} -n ${module.s3www_app.release_namespace}"
+    history   = "helm history ${module.s3www_app.release_name} -n ${module.s3www_app.release_namespace}"
+    upgrade   = "helm upgrade ${module.s3www_app.release_name} ./helm-charts/s3www-app -n ${module.s3www_app.release_namespace}"
+    rollback  = "helm rollback ${module.s3www_app.release_name} -n ${module.s3www_app.release_namespace}"
+    uninstall = "helm uninstall ${module.s3www_app.release_name} -n ${module.s3www_app.release_namespace}"
   }
 }

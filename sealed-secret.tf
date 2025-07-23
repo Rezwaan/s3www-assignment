@@ -1,30 +1,23 @@
-# Deploy Sealed Secrets Controller first
-resource "helm_release" "sealed_secrets" {
+# Sealed Secrets using the module
+module "sealed_secrets" {
+  source = "./modules/helm-release"
+
   name       = "sealed-secrets"
   namespace  = "kube-system"
   repository = "https://bitnami-labs.github.io/sealed-secrets"
   chart      = "sealed-secrets"
-  version    = "2.10.0"
 
-  # Lifecycle management, Since its a managed chart, we need to make sure we have more control on deployment, CRDs and webhooks
-  wait                = true
-  timeout             = 300
+  # Lifecycle management
   create_namespace    = true
-  cleanup_on_fail     = true
   replace             = var.force_update
   disable_webhooks    = false
-  atomic              = true  # Ensures rollback on failure
-  skip_crds           = false # Ensure CRDs are managed
+  atomic              = true
+  skip_crds           = false
 
-  # Lifecycle hooks
-  provisioner "local-exec" {
-    when    = create
-    command = "echo 'Sealed Secrets Controller deployed successfully'"
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "echo 'Cleaning up Sealed Secrets Controller'"
+  # Provisioner commands
+  provisioners = {
+    create_commands  = ["echo 'Sealed Secrets Controller deployed successfully'"]
+    destroy_commands = ["echo 'Cleaning up Sealed Secrets Controller'"]
   }
 }
 

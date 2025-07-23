@@ -1,6 +1,6 @@
 # Create namespace for the application
 resource "kubernetes_namespace_v1" "s3www_namespace" {
-  depends_on = [helm_release.sealed_secrets]
+  depends_on = [module.sealed_secrets]
   metadata {
     name = var.namespace
     labels = {
