@@ -17,9 +17,9 @@ Senior Cloud Engineer - UP42 Assignment
 | Planning            |     02h            |Didnt know about MinIO so had to understand the assignment in details
 | Implementation      |     05h            |Implented Helm Charts, Terraform, Sealed Secrets for increased Security, Modularization of terraform resources.
 | Testing             |     01h            |Steps mentioned below
-| Documentation       |     01h            |
-| Review & Cleanup    |      -             |
-| **Total**           |     09h            |
+| Documentation       |     02h            |
+| Review & Cleanup    |     02             |
+| **Total**           |     12h            |
 
 
 ## Architectural Diagram
