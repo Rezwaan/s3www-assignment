@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "s3www-app.fullname" . }}-s3www
+  labels:
+    {{- include "s3www-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: s3www
+  annotations:
+    {{- if .Values.s3www.monitoring.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/path: {{ .Values.s3www.monitoring.path | quote }}
+    prometheus.io/port: {{ .Values.s3www.monitoring.port | quote }}
+    {{- end }}
+spec:
+  type: {{ .Values.s3www.service.type }}
+  ports:
+    - port: {{ .Values.s3www.service.port }}
+      targetPort: {{ .Values.s3www.service.targetPort }}
+      protocol: TCP
+      name: {{ .Values.s3www.service.name }}
+  selector:
+    {{- include "s3www-app.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: s3www

@@ -1,0 +1,12 @@
+apiVersion: v2
+name: s3www-app
+description: A Helm chart for s3www application with MinIO dependency
+type: application
+version: 0.1.0
+appVersion: "latest"
+
+dependencies:
+  - name: minio
+    version: "5.0.15"
+    repository: "https://charts.min.io/"
+    condition: minio.enabled

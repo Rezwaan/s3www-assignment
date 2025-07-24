@@ -1,0 +1,6 @@
+dependencies:
+- name: minio
+  repository: https://charts.min.io/
+  version: 5.0.15
+digest: sha256:cbc933fbd69c98dcfeb12a974f07e34b6a832cdb99116580de737ce05123b48e
+generated: "2025-07-22T17:16:49.2402+02:00"
